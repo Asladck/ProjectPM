@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance - SDU Platform</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/assignments" class="nav-link">Assignments</a>
+                <a href="/attendance" class="nav-link active">Attendance</a>
+                <a href="/chat" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Loading...</span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">📊 Attendance</h1>
+                    <p class="page-subtitle">Track your class attendance</p>
+                </div>
+            </div>
+
+            <div class="attendance-controls">
+                <div class="control-group">
+                    <label for="courseSelect">Select Course</label>
+                    <select id="courseSelect" class="form-select">
+                        <option value="">Choose a course...</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="sessionSelect">Select Session</label>
+                    <select id="sessionSelect" class="form-select" disabled>
+                        <option value="">Choose a session...</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" id="loadAttendanceBtn" disabled>
+                    Load Attendance
+                </button>
+            </div>
+
+            <div id="courseInfo" class="course-info-card glass-card hidden">
+                <div class="course-info-header">
+                    <h2 id="courseName">Course Name</h2>
+                    <span class="course-code" id="courseCode">CODE</span>
+                </div>
+                <div class="course-info-body">
+                    <div class="info-item">
+                        <span class="info-label">Instructor:</span>
+                        <span class="info-value" id="courseInstructor">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Schedule:</span>
+                        <span class="info-value" id="courseSchedule">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Sessions:</span>
+                        <span class="info-value" id="totalSessions">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="attendanceSection" class="attendance-section hidden">
+                <div class="section-header">
+                    <h2>Attendance Records</h2>
+                    <div class="attendance-summary">
+                        <div class="summary-item present">
+                            <div class="summary-dot"></div>
+                            <span>Present: <strong id="presentCount">0</strong></span>
+                        </div>
+                        <div class="summary-item absent">
+                            <div class="summary-dot"></div>
+                            <span>Absent: <strong id="absentCount">0</strong></span>
+                        </div>
+                        <div class="summary-item late">
+                            <div class="summary-dot"></div>
+                            <span>Late: <strong id="lateCount">0</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <tr>
+                                <td colspan="4" class="empty-state">No attendance records yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mark-attendance-section">
+                    <h3>Mark Your Attendance</h3>
+                    <form id="markAttendanceForm" class="mark-attendance-form">
+                        <div class="form-group">
+                            <label for="studentId">Student ID</label>
+                            <input type="text" id="studentId" required placeholder="Enter your student ID">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="status" value="PRESENT" checked>
+                                    <span class="radio-custom present"></span>
+                                    Present
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="status" value="LATE">
+                                    <span class="radio-custom late"></span>
+                                    Late
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="status" value="ABSENT">
+                                    <span class="radio-custom absent"></span>
+                                    Absent
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Mark Attendance</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="loadingState" class="loading-state">
+                <div class="loading">Select a course and session to view attendance</div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/attendance.js"></script>
+</body>
+</html>
+

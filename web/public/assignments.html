@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments - SDU Platform</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/assignments" class="nav-link active">Assignments</a>
+                <a href="/attendance" class="nav-link">Attendance</a>
+                <a href="/chat" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Loading...</span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">📚 Assignments</h1>
+                    <p class="page-subtitle">Manage your coursework and submissions</p>
+                </div>
+                <button class="btn btn-primary" id="createAssignmentBtn" style="display: none;">
+                    + Create Assignment
+                </button>
+            </div>
+
+            <div class="filters-section">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="pending">Pending</button>
+                    <button class="filter-tab" data-filter="submitted">Submitted</button>
+                    <button class="filter-tab" data-filter="late">Late</button>
+                </div>
+            </div>
+
+            <div id="assignmentsList" class="assignments-container">
+                <div class="loading">Loading assignments...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Assignment Modal (Teacher only) -->
+    <div id="createAssignmentModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Assignment</h2>
+                <button class="modal-close" id="closeCreateModal">&times;</button>
+            </div>
+            <form id="createAssignmentForm" class="modal-body">
+                <div class="form-group">
+                    <label for="assignmentTitle">Title</label>
+                    <input type="text" id="assignmentTitle" required placeholder="e.g., Database Design Project">
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentDescription">Description</label>
+                    <textarea id="assignmentDescription" rows="4" required placeholder="Assignment details..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentDueDate">Due Date</label>
+                    <input type="datetime-local" id="assignmentDueDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="studentIds">Student IDs (comma-separated)</label>
+                    <textarea id="studentIds" rows="3" placeholder="uuid1, uuid2, uuid3..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelCreate">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Assignment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Submit Assignment Modal (Student only) -->
+    <div id="submitAssignmentModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Submit Assignment</h2>
+                <button class="modal-close" id="closeSubmitModal">&times;</button>
+            </div>
+            <form id="submitAssignmentForm" class="modal-body">
+                <input type="hidden" id="submitAssignmentId">
+
+                <div class="form-group">
+                    <label for="submitStudentId">Your Student ID</label>
+                    <input type="text" id="submitStudentId" required placeholder="Enter your UUID">
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentFile">Upload File</label>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="assignmentFile" accept=".pdf,.doc,.docx" required hidden>
+                        <div class="file-upload-placeholder">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p>Click to upload or drag and drop</p>
+                            <span>PDF, DOC, DOCX (max 10MB)</span>
+                        </div>
+                        <div class="file-selected hidden" id="fileSelected">
+                            <span class="file-name"></span>
+                            <button type="button" class="file-remove">&times;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelSubmit">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/assignments.js"></script>
+</body>
+</html>
+

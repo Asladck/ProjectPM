@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SDU Platform</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link active">Dashboard</a>
+                <a href="/assignments" class="nav-link">Assignments</a>
+                <a href="/attendance" class="nav-link">Attendance</a>
+                <a href="/chat" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Loading...</span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="welcome-section">
+                <h1 class="welcome-title">Welcome back, <span id="welcomeName">Student</span>! 👋</h1>
+                <p class="welcome-subtitle">Here's what's happening with your courses today</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="assignmentsCount">0</h3>
+                        <p class="stat-label">Assignments</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="attendanceRate">0%</h3>
+                        <p class="stat-label">Attendance Rate</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="messagesCount">0</h3>
+                        <p class="stat-label">Messages</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="coursesCount">0</h3>
+                        <p class="stat-label">Courses</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card glass-card">
+                    <div class="card-header">
+                        <h2>📚 Recent Assignments</h2>
+                        <a href="/assignments" class="card-link">View all</a>
+                    </div>
+                    <div class="card-content">
+                        <div id="recentAssignments" class="assignments-list">
+                            <div class="loading">Loading assignments...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card glass-card">
+                    <div class="card-header">
+                        <h2>📊 Quick Actions</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="action-buttons">
+                            <a href="/assignments" class="action-btn">
+                                <div class="action-icon">📝</div>
+                                <div class="action-text">
+                                    <h3>Submit Assignment</h3>
+                                    <p>Upload your work</p>
+                                </div>
+                            </a>
+                            <a href="/attendance" class="action-btn">
+                                <div class="action-icon">✅</div>
+                                <div class="action-text">
+                                    <h3>Mark Attendance</h3>
+                                    <p>Check in for class</p>
+                                </div>
+                            </a>
+                            <a href="/chat" class="action-btn">
+                                <div class="action-icon">💬</div>
+                                <div class="action-text">
+                                    <h3>Open Chat</h3>
+                                    <p>Connect with others</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
+

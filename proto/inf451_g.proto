@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package inf451;
+option go_package = "inf451/proto";
+
+service AttendanceAPI {
+  rpc MarkAttendance(MarkRequest) returns (MarkResponse);
+}
+
+message MarkRequest {
+  string studentId = 1;
+  string sessionId = 2;
+  string status = 3;
+}
+
+message MarkResponse {
+  bool ok = 1;
+  string message = 2;
+}

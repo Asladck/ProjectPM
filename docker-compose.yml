@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: ws
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ws"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  mongodb:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: user
+      MONGO_INITDB_DATABASE: mydb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    entrypoint:
+      [
+        "migrate",
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://postgres:12345678@postgres:5432/ws?sslmode=disable",
+        "up"
+      ]
+
+  # ✅ GO backend + frontend + websocket + grpc
+  app:
+    build: .
+    ports:
+      - "9090:9090"     # HTTP API + Front
+      - "8085:8085"     # WebSocket
+      - "50051:50051"   # gRPC
+    environment:
+      HOST: 0.0.0.0
+      PASSWORD_DB: 12345678
+      PGUSER: postgres
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # ✅ JAVA Attendance Service
+  attendance-service:
+    build: ./java/inf451/attendance_check-service
+    ports:
+      - "4061:4061"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ws
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12345678
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ✅ JAVA File Upload Service
+  file-service:
+    build: ./java/inf451/file_upload-download
+    ports:
+      - "4062:4062"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ws
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12345678
+      SPRING_DATA_MONGODB_URI: mongodb://user:user@mongodb:27017/mydb
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+
+volumes:
+  mongo-data:
+  pg-data:

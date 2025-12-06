@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDU Platform - Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-card {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .status-card.success {
+            border-left-color: #48bb78;
+        }
+
+        .status-card.error {
+            border-left-color: #f5576c;
+        }
+
+        .status-card h3 {
+            font-size: 0.875rem;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-card p {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .test-section {
+            margin-bottom: 2rem;
+        }
+
+        .test-section h2 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .log {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+
+        .log-error {
+            color: #f5576c;
+        }
+
+        .log-success {
+            color: #48bb78;
+        }
+
+        .log-info {
+            color: #4facfe;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 SDU Platform - Test Dashboard</h1>
+        <p style="color: #718096; margin-bottom: 2rem;">Test all backend services and frontend functionality</p>
+
+        <div class="status-grid">
+            <div class="status-card" id="authStatus">
+                <h3>Auth Service (9090)</h3>
+                <p id="authStatusText">Checking...</p>
+            </div>
+
+            <div class="status-card" id="attendanceStatus">
+                <h3>Attendance Service (4061)</h3>
+                <p id="attendanceStatusText">Checking...</p>
+            </div>
+
+            <div class="status-card" id="assignmentStatus">
+                <h3>Assignment Service (4062)</h3>
+                <p id="assignmentStatusText">Checking...</p>
+            </div>
+
+            <div class="status-card" id="wsStatus">
+                <h3>WebSocket Service (8085)</h3>
+                <p id="wsStatusText">Checking...</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Authentication Tests</h2>
+            <button class="btn" onclick="testSignUp()">Test Sign Up</button>
+            <button class="btn" onclick="testSignIn()">Test Sign In</button>
+            <button class="btn" onclick="testRefreshToken()">Test Token Refresh</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Assignment Tests</h2>
+            <button class="btn" onclick="testGetAssignments()">Get All Assignments</button>
+            <button class="btn" onclick="testCreateAssignment()">Create Assignment (Teacher)</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Attendance Tests</h2>
+            <button class="btn" onclick="testGetCourse()">Get Course Info</button>
+            <button class="btn" onclick="testMarkAttendance()">Mark Attendance</button>
+        </div>
+
+        <div class="test-section">
+            <h2>WebSocket Tests</h2>
+            <button class="btn" onclick="testWebSocket()">Connect WebSocket</button>
+            <button class="btn" onclick="sendTestMessage()">Send Message</button>
+            <button class="btn" onclick="disconnectWebSocket()">Disconnect</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Frontend Navigation</h2>
+            <button class="btn" onclick="window.location.href='/public/login.html'">Open Login Page</button>
+            <button class="btn" onclick="window.location.href='/public/register.html'">Open Register Page</button>
+            <button class="btn" onclick="window.location.href='/public/index.html'">Open Dashboard</button>
+        </div>
+
+        <div class="log" id="testLog">
+            <div class="log-entry log-info">Ready to run tests...</div>
+        </div>
+    </div>
+
+    <script>
+        let testWs = null;
+
+        // Logging
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('testLog');
+            const time = new Date().toLocaleTimeString();
+            const colors = { info: 'log-info', success: 'log-success', error: 'log-error' };
+            logDiv.innerHTML += `<div class="log-entry ${colors[type]}">[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Check service status
+        async function checkServiceStatus(url, name, statusEl, textEl) {
+            try {
+                const response = await fetch(url, { method: 'GET', mode: 'no-cors' });
+                statusEl.classList.add('success');
+                textEl.textContent = 'Online ✓';
+                log(`${name} is online`, 'success');
+            } catch (error) {
+                statusEl.classList.add('error');
+                textEl.textContent = 'Offline ✗';
+                log(`${name} is offline: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize status checks
+        window.addEventListener('DOMContentLoaded', () => {
+            checkServiceStatus('http://localhost:9090/api/test', 'Auth Service',
+                document.getElementById('authStatus'), document.getElementById('authStatusText'));
+            checkServiceStatus('http://localhost:4061/actuator/health', 'Attendance Service',
+                document.getElementById('attendanceStatus'), document.getElementById('attendanceStatusText'));
+            checkServiceStatus('http://localhost:4062/actuator/health', 'Assignment Service',
+                document.getElementById('assignmentStatus'), document.getElementById('assignmentStatusText'));
+            checkServiceStatus('http://localhost:8085/api/test', 'WebSocket Service',
+                document.getElementById('wsStatus'), document.getElementById('wsStatusText'));
+        });
+
+        // Auth Tests
+        async function testSignUp() {
+            log('Testing Sign Up...');
+            try {
+                const response = await fetch('http://localhost:9090/auth/sign-up', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test',
+                        surname: 'User',
+                        email: `test${Date.now()}@sdu.edu.kz`,
+                        password: 'password123',
+                        role: 'student'
+                    })
+                });
+                const data = await response.json();
+                log(`Sign Up: ${response.ok ? 'SUCCESS' : 'FAILED'} - ${JSON.stringify(data)}`,
+                    response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Sign Up ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSignIn() {
+            log('Testing Sign In...');
+            try {
+                const response = await fetch('http://localhost:9090/auth/sign-in', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'student@sdu.edu.kz',
+                        password: 'student123',
+                        role: 'student'
+                    })
+                });
+                const data = await response.json();
+                if (response.ok && data.access_token) {
+                    localStorage.setItem('accessToken', data.access_token);
+                    localStorage.setItem('refreshToken', data.refresh_token);
+                    log(`Sign In: SUCCESS - Token saved`, 'success');
+                } else {
+                    log(`Sign In: FAILED - ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log(`Sign In ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRefreshToken() {
+            log('Testing Token Refresh...');
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) {
+                log('No refresh token found. Please sign in first.', 'error');
+                return;
+            }
+            try {
+                const response = await fetch('http://localhost:9090/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+                const data = await response.json();
+                log(`Token Refresh: ${response.ok ? 'SUCCESS' : 'FAILED'}`,
+                    response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Token Refresh ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // Assignment Tests
+        async function testGetAssignments() {
+            log('Testing Get Assignments...');
+            const token = localStorage.getItem('accessToken');
+            try {
+                const response = await fetch('http://localhost:4062/uploadAssignment/getAll', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                log(`Get Assignments: ${response.ok ? 'SUCCESS' : 'FAILED'} - Found ${data.length || 0} assignments`,
+                    response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Get Assignments ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCreateAssignment() {
+            log('Testing Create Assignment...');
+            const token = localStorage.getItem('accessToken');
+            try {
+                const response = await fetch('http://localhost:4062/uploadAssignment/create?teacherId=test-teacher', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: 'Test Assignment',
+                        description: 'This is a test assignment',
+                        dueDate: new Date(Date.now() + 7*24*60*60*1000).toISOString(),
+                        studentIds: []
+                    })
+                });
+                log(`Create Assignment: ${response.ok ? 'SUCCESS' : 'FAILED'}`,
+                    response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Create Assignment ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // Attendance Tests
+        async function testGetCourse() {
+            log('Testing Get Course...');
+            const token = localStorage.getItem('accessToken');
+            try {
+                const response = await fetch('http://localhost:4061/attendance/getCourse/1', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                log(`Get Course: ${response.ok ? 'SUCCESS' : 'FAILED'}`,
+                    response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Get Course ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMarkAttendance() {
+            log('Testing Mark Attendance...');
+            const token = localStorage.getItem('accessToken');
+            try {
+                const response = await fetch('http://localhost:4061/attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        studentId: 'test-student',
+                        sessionId: 'test-session',
+                        status: 'PRESENT'
+                    })
+                });
+                log(`Mark Attendance: ${response.ok ? 'SUCCESS' : 'FAILED'}`,
+                    response.ok ? 'success' : 'error');
+            } catch (error) {
+                log(`Mark Attendance ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // WebSocket Tests
+        function testWebSocket() {
+            log('Testing WebSocket Connection...');
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                log('No access token found. Please sign in first.', 'error');
+                return;
+            }
+
+            try {
+                testWs = new WebSocket(`ws://localhost:8085/ws?token=${token}`);
+
+                testWs.onopen = () => {
+                    log('WebSocket: CONNECTED', 'success');
+                };
+
+                testWs.onmessage = (event) => {
+                    log(`WebSocket Message Received: ${event.data}`, 'info');
+                };
+
+                testWs.onerror = (error) => {
+                    log(`WebSocket ERROR: ${error}`, 'error');
+                };
+
+                testWs.onclose = () => {
+                    log('WebSocket: DISCONNECTED', 'info');
+                };
+            } catch (error) {
+                log(`WebSocket ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        function sendTestMessage() {
+            if (!testWs || testWs.readyState !== WebSocket.OPEN) {
+                log('WebSocket not connected', 'error');
+                return;
+            }
+
+            const message = {
+                text: 'Test message from test page',
+                time: new Date().toLocaleTimeString()
+            };
+
+            testWs.send(JSON.stringify(message));
+            log('Test message sent', 'success');
+        }
+
+        function disconnectWebSocket() {
+            if (testWs) {
+                testWs.close();
+                testWs = null;
+                log('WebSocket disconnected', 'info');
+            }
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - SDU Platform</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/assignments" class="nav-link">Assignments</a>
+                <a href="/attendance" class="nav-link">Attendance</a>
+                <a href="/chat" class="nav-link active">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Loading...</span>
+                    <span class="user-role" id="userRole"></span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content chat-page">
+        <div class="container chat-container">
+            <div class="chat-card glass-card">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <h2>💬 Live Chat</h2>
+                        <div class="connection-status" id="connectionStatus">
+                            <span class="status-dot disconnected"></span>
+                            <span class="status-text">Connecting...</span>
+                        </div>
+                    </div>
+                    <div class="chat-info">
+                        <span id="onlineCount">0 online</span>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-welcome">
+                        <div class="welcome-icon">👋</div>
+                        <h3>Welcome to SDU Platform Chat!</h3>
+                        <p>Start chatting with your classmates and teachers</p>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <form id="chatForm" class="chat-form">
+                        <div class="chat-input-wrapper">
+                            <input
+                                type="text"
+                                id="messageInput"
+                                placeholder="Type your message..."
+                                autocomplete="off"
+                                maxlength="500"
+                            >
+                            <button type="submit" class="btn-send" id="sendBtn" disabled>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/500
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/chat.js"></script>
+</body>
+</html>
+
