@@ -23,9 +23,15 @@ func (r *AuthRepository) Create(user models.User) (string, error) {
 	}
 	return id, nil
 }
-func (r *AuthRepository) GetUser(password, email string) (models.User, error) {
+func (r *AuthRepository) GetUser(password, email, role string) (models.User, error) {
 	var user models.User
-	query := fmt.Sprintf("SELECT id FROM %s WHERE password_hash=$1 AND email=$2", users)
-	err := r.db.Get(&user, query, password, email)
+
+	query := `
+		SELECT id, email, name, surname, password_hash, role
+		FROM users
+		WHERE email = $1 AND password_hash = $2 AND role = $3
+	`
+
+	err := r.db.Get(&user, query, email, password, role)
 	return user, err
 }

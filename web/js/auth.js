@@ -12,9 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const role = document.getElementById('role').value;
+            const emailEl = document.getElementById('email');
+            const passwordEl = document.getElementById('password');
+            const roleEl = document.getElementById('role');
+
+            const email = emailEl ? emailEl.value.trim() : '';
+            const password = passwordEl ? passwordEl.value : '';
+            const role = roleEl ? roleEl.value : '';
 
             if (!role) {
                 showError('Please select a role');
@@ -22,28 +26,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const submitBtn = loginForm.querySelector('button[type="submit"]');
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoader = submitBtn.querySelector('.btn-loader');
+            const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
+            const btnLoader = submitBtn ? submitBtn.querySelector('.btn-loader') : null;
 
             try {
                 // Show loading state
-                btnText.style.display = 'none';
-                btnLoader.classList.remove('hidden');
-                submitBtn.disabled = true;
+                if (btnText) btnText.style.display = 'none';
+                if (btnLoader) btnLoader.classList.remove('hidden');
+                if (submitBtn) submitBtn.disabled = true;
                 hideError();
+
+                // Use global api if available
+                if (typeof api === 'undefined' || !api || !api.signIn) {
+                    throw new Error('API is not available');
+                }
 
                 await api.signIn(email, password, role);
 
-                // Success - redirect to dashboard
-                window.location.href = '/dashboard';
+                // Get user role and redirect accordingly
+                const userRole = localStorage.getItem('role');
 
-            } catch (error) {
-                showError(error.message || 'Failed to sign in. Please try again.');
+                if (userRole === 'TEACHER') {
+                    window.location.href = 'teacher-dashboard.html';
+                } else if (userRole === 'STUDENT') {
+                    window.location.href = 'student-dashboard.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+
+            } catch (err) {
+                const message = (err && err.message) ? err.message : String(err);
+                showError(message || 'Failed to sign in. Please try again.');
 
                 // Reset button
-                btnText.style.display = 'inline';
-                btnLoader.classList.add('hidden');
-                submitBtn.disabled = false;
+                if (btnText) btnText.style.display = 'inline';
+                if (btnLoader) btnLoader.classList.add('hidden');
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }
@@ -53,11 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const name = document.getElementById('name').value;
-            const surname = document.getElementById('surname').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const role = document.getElementById('role').value;
+            const name = document.getElementById('name') ? document.getElementById('name').value.trim() : '';
+            const surname = document.getElementById('surname') ? document.getElementById('surname').value.trim() : '';
+            const email = document.getElementById('email') ? document.getElementById('email').value.trim() : '';
+            const password = document.getElementById('password') ? document.getElementById('password').value : '';
+            const role = document.getElementById('role') ? document.getElementById('role').value : '';
 
             if (!role) {
                 showError('Please select a role');
@@ -70,15 +88,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const submitBtn = registerForm.querySelector('button[type="submit"]');
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoader = submitBtn.querySelector('.btn-loader');
+            const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
+            const btnLoader = submitBtn ? submitBtn.querySelector('.btn-loader') : null;
 
             try {
                 // Show loading state
-                btnText.style.display = 'none';
-                btnLoader.classList.remove('hidden');
-                submitBtn.disabled = true;
+                if (btnText) btnText.style.display = 'none';
+                if (btnLoader) btnLoader.classList.remove('hidden');
+                if (submitBtn) submitBtn.disabled = true;
                 hideError();
+
+                if (typeof api === 'undefined' || !api || !api.signUp) {
+                    throw new Error('API is not available');
+                }
 
                 await api.signUp(name, surname, email, password, role);
 
@@ -86,16 +108,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 showSuccess('Account created successfully! Redirecting to login...');
 
                 setTimeout(() => {
-                    window.location.href = '/sign-in';
+                    window.location.href = 'login.html';
                 }, 2000);
 
-            } catch (error) {
-                showError(error.message || 'Failed to create account. Please try again.');
+            } catch (err) {
+                const message = (err && err.message) ? err.message : String(err);
+                showError(message || 'Failed to create account. Please try again.');
 
                 // Reset button
-                btnText.style.display = 'inline';
-                btnLoader.classList.add('hidden');
-                submitBtn.disabled = false;
+                if (btnText) btnText.style.display = 'inline';
+                if (btnLoader) btnLoader.classList.add('hidden');
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }
@@ -113,6 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 errorMessage.classList.remove('animate-shake');
             }, 500);
+        } else {
+            // Fallback alert
+            console.error('Error:', message);
         }
     }
 
@@ -123,6 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessage.style.background = 'rgba(0, 242, 254, 0.1)';
             errorMessage.style.color = '#0987a0';
             errorMessage.style.border = '1px solid #00f2fe';
+        } else {
+            console.log('Success:', message);
         }
     }
 
@@ -132,4 +160,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-

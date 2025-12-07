@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - SDU Platform</title>
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/animations.css">
 </head>
 <body>
     <nav class="navbar">
@@ -24,16 +24,13 @@
                 <span>SDU Platform</span>
             </div>
 
-            <div class="nav-links">
-                <a href="/dashboard" class="nav-link">Dashboard</a>
-                <a href="/assignments" class="nav-link">Assignments</a>
-                <a href="/attendance" class="nav-link">Attendance</a>
-                <a href="/chat" class="nav-link active">Chat</a>
+            <div class="nav-links" id="navLinks">
+                <!-- Will be populated based on role -->
             </div>
 
             <div class="nav-user">
                 <div class="user-info">
-                    <span class="user-name" id="userName">Loading...</span>
+                    <span class="user-name" id="userName">User</span>
                     <span class="user-role" id="userRole"></span>
                 </div>
                 <button class="btn-logout" id="logoutBtn">Logout</button>
@@ -42,57 +39,233 @@
     </nav>
 
     <main class="main-content chat-page">
-        <div class="container chat-container">
-            <div class="chat-card glass-card">
-                <div class="chat-header">
-                    <div class="chat-title">
-                        <h2>💬 Live Chat</h2>
-                        <div class="connection-status" id="connectionStatus">
-                            <span class="status-dot disconnected"></span>
-                            <span class="status-text">Connecting...</span>
-                        </div>
-                    </div>
-                    <div class="chat-info">
-                        <span id="onlineCount">0 online</span>
-                    </div>
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">💬 Class Chat</h1>
+                    <p class="page-subtitle">Real-time communication</p>
                 </div>
-
-                <div class="chat-messages" id="chatMessages">
-                    <div class="chat-welcome">
-                        <div class="welcome-icon">👋</div>
-                        <h3>Welcome to SDU Platform Chat!</h3>
-                        <p>Start chatting with your classmates and teachers</p>
-                    </div>
-                </div>
-
-                <div class="chat-input-container">
-                    <form id="chatForm" class="chat-form">
-                        <div class="chat-input-wrapper">
-                            <input
-                                type="text"
-                                id="messageInput"
-                                placeholder="Type your message..."
-                                autocomplete="off"
-                                maxlength="500"
-                            >
-                            <button type="submit" class="btn-send" id="sendBtn" disabled>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="char-counter">
-                            <span id="charCount">0</span>/500
-                        </div>
-                    </form>
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/chat.js"></script>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-welcome">
+                        <h3>Welcome to the chat!</h3>
+                        <p>Start a conversation with your classmates and teachers</p>
+                    </div>
+                </div>
+
+                <form class="chat-input-form" id="chatForm">
+                    <input
+                        type="text"
+                        id="messageInput"
+                        placeholder="Type your message..."
+                        autocomplete="off"
+                        required
+                    >
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Set up navigation based on role
+        const navLinks = document.getElementById('navLinks');
+        if (role === 'TEACHER') {
+            navLinks.innerHTML = `
+                <a href="teacher-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="assignment-teacher.html" class="nav-link">Assignments</a>
+                <a href="attendance-teacher.html" class="nav-link">Attendance</a>
+                <a href="chat.html" class="nav-link active">Chat</a>
+            `;
+            document.getElementById('userRole').className = 'user-role badge badge-teacher';
+            document.getElementById('userRole').textContent = 'TEACHER';
+        } else {
+            navLinks.innerHTML = `
+                <a href="student-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="assignment-student.html" class="nav-link">Assignments</a>
+                <a href="attendance-student.html" class="nav-link">Attendance</a>
+                <a href="chat.html" class="nav-link active">Chat</a>
+            `;
+            document.getElementById('userRole').className = 'user-role badge badge-student';
+            document.getElementById('userRole').textContent = 'STUDENT';
+        }
+
+        // Get user info
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        document.getElementById('userName').textContent = userInfo.email || 'User';
+
+        // Handle logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            if (ws) ws.close();
+            api.logout();
+        });
+
+        // WebSocket connection
+        let ws = null;
+        let reconnectTimeout = null;
+        const messagesContainer = document.getElementById('chatMessages');
+        const statusIndicator = document.getElementById('connectionStatus');
+        const messageForm = document.getElementById('chatForm');
+        const messageInput = document.getElementById('messageInput');
+
+        function updateConnectionStatus(status) {
+            const statusDot = statusIndicator.querySelector('.status-dot');
+            const statusText = statusIndicator.querySelector('.status-text');
+
+            if (status === 'connected') {
+                statusDot.className = 'status-dot connected';
+                statusText.textContent = 'Connected';
+            } else if (status === 'connecting') {
+                statusDot.className = 'status-dot connecting';
+                statusText.textContent = 'Connecting...';
+            } else {
+                statusDot.className = 'status-dot disconnected';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function connectWebSocket() {
+            try {
+                updateConnectionStatus('connecting');
+                ws = api.createWebSocket();
+
+                if (!ws) {
+                    console.error('Failed to create WebSocket');
+                    updateConnectionStatus('disconnected');
+                    scheduleReconnect();
+                    return;
+                }
+
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    updateConnectionStatus('connected');
+                    if (reconnectTimeout) {
+                        clearTimeout(reconnectTimeout);
+                        reconnectTimeout = null;
+                    }
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        displayMessage(data);
+                    } catch (error) {
+                        console.error('Failed to parse message:', error);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus('disconnected');
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket closed');
+                    updateConnectionStatus('disconnected');
+                    scheduleReconnect();
+                };
+
+            } catch (error) {
+                console.error('Failed to connect WebSocket:', error);
+                updateConnectionStatus('disconnected');
+                scheduleReconnect();
+            }
+        }
+
+        function scheduleReconnect() {
+            if (reconnectTimeout) return;
+            reconnectTimeout = setTimeout(() => {
+                console.log('Attempting to reconnect...');
+                connectWebSocket();
+            }, 3000);
+        }
+
+        function displayMessage(data) {
+            // Remove welcome message if it exists
+            const welcome = messagesContainer.querySelector('.chat-welcome');
+            if (welcome) welcome.remove();
+
+            const messageEl = document.createElement('div');
+            const isMyMessage = data.isMyMessage || (data.username === userInfo.email);
+
+            messageEl.className = `chat-message ${isMyMessage ? 'my-message' : 'other-message'}`;
+
+            const time = data.time ? new Date(data.time).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : new Date().toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageEl.innerHTML = `
+                <div class="message-header">
+                    <span class="message-author">${escapeHtml(data.username || 'Anonymous')}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${escapeHtml(data.text || data.message || '')}</div>
+            `;
+
+            messagesContainer.appendChild(messageEl);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function sendMessage(text) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('Not connected to chat. Please wait...');
+                return;
+            }
+
+            const message = {
+                text,
+                username: userInfo.email || 'Anonymous',
+                time: new Date().toISOString(),
+                isMyMessage: true
+            };
+
+            ws.send(JSON.stringify(message));
+            displayMessage(message);
+        }
+
+        // Handle form submission
+        messageForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+
+            if (!text) return;
+
+            sendMessage(text);
+            messageInput.value = '';
+        });
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Connect on page load
+        connectWebSocket();
+    </script>
 </body>
 </html>
-

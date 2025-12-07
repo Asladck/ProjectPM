@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments (Student) - SDU Platform</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="student-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="assignment-student.html" class="nav-link active">Assignments</a>
+                <a href="attendance-student.html" class="nav-link">Attendance</a>
+                <a href="chat.html" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Student</span>
+                    <span class="user-role badge badge-student">STUDENT</span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">📚 My Assignments</h1>
+                    <p class="page-subtitle">View and submit your assignments</p>
+                </div>
+            </div>
+
+            <div id="assignmentsList" class="assignments-container">
+                <div class="loading">Loading assignments...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Submit Assignment Modal -->
+    <div id="submitAssignmentModal" class="modal hidden">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Submit Assignment</h2>
+                <button class="modal-close" id="closeSubmitModal">&times;</button>
+            </div>
+            <form id="submitAssignmentForm" class="modal-body">
+                <input type="hidden" id="submitAssignmentId">
+
+                <div class="form-group">
+                    <label for="submitStudentId">Your Student ID</label>
+                    <input type="text" id="submitStudentId" required placeholder="Enter your UUID">
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentFile">Upload File</label>
+                    <input type="file" id="assignmentFile" accept=".pdf,.doc,.docx" required>
+                    <p class="form-hint">Supported formats: PDF, DOC, DOCX (max 10MB)</p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelSubmit">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Assignment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+        // Check if user is student
+        const role = localStorage.getItem('role');
+        if (role !== 'STUDENT') {
+            window.location.href = 'assignment-teacher.html';
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            api.logout();
+        });
+
+        // Modal handling
+        const submitModal = document.getElementById('submitAssignmentModal');
+        const closeBtn = document.getElementById('closeSubmitModal');
+        const cancelBtn = document.getElementById('cancelSubmit');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const form = document.getElementById('submitAssignmentForm');
+
+        let currentAssignmentId = null;
+
+        function openSubmitModal(assignmentId) {
+            currentAssignmentId = assignmentId;
+            document.getElementById('submitAssignmentId').value = assignmentId;
+            submitModal.classList.remove('hidden');
+        }
+
+        [closeBtn, cancelBtn, modalOverlay].forEach(el => {
+            el?.addEventListener('click', () => {
+                submitModal.classList.add('hidden');
+                form.reset();
+            });
+        });
+
+        // Submit assignment
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const studentId = document.getElementById('submitStudentId').value;
+            const assignmentId = document.getElementById('submitAssignmentId').value;
+            const file = document.getElementById('assignmentFile').files[0];
+
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            try {
+                await api.submitAssignment(studentId, assignmentId, file);
+                alert('Assignment submitted successfully!');
+                submitModal.classList.add('hidden');
+                form.reset();
+                loadAssignments();
+            } catch (error) {
+                alert('Failed to submit assignment: ' + error.message);
+            }
+        });
+
+        // Load assignments
+        async function loadAssignments() {
+            const container = document.getElementById('assignmentsList');
+
+            try {
+                const assignments = await api.getAllAssignments();
+
+                if (!assignments || assignments.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No assignments available yet.</div>';
+                    return;
+                }
+
+                container.innerHTML = assignments.map(assignment => `
+                    <div class="assignment-card">
+                        <div class="assignment-header">
+                            <h3>${escapeHtml(assignment.title || 'Untitled')}</h3>
+                            <span class="assignment-badge badge-pending">Pending</span>
+                        </div>
+                        <p class="assignment-description">${escapeHtml(assignment.description || '')}</p>
+                        <div class="assignment-footer">
+                            <span class="assignment-due">📅 Due: ${new Date(assignment.dueDate || Date.now()).toLocaleString()}</span>
+                            <button class="btn btn-sm btn-primary" onclick="openSubmitModal('${assignment.id || assignment.assignmentId || ''}')">
+                                Submit Assignment
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                container.innerHTML = `<div class="error-state">Failed to load assignments: ${error.message}</div>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Make openSubmitModal available globally
+        window.openSubmitModal = openSubmitModal;
+
+        loadAssignments();
+    </script>
+</body>
+</html>

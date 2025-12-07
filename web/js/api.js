@@ -64,7 +64,7 @@ class API {
         } catch (error) {
             console.error('Token refresh failed:', error);
             this.clearTokens();
-            window.location.href = '/sign-in';
+            window.location.href = 'login.html';
             return false;
         }
     }
@@ -121,17 +121,24 @@ class API {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Sign in failed');
+            const error = await response.text();
+            throw new Error(error || 'Sign in failed');
         }
 
         const data = await response.json();
-        this.setTokens(data.access_token, data.refresh_token);
+        // Support both snake_case and camelCase tokens from backend
+        const accessToken = data.access_token || data.accessToken || data.token || data.accessToken;
+        const refreshToken = data.refresh_token || data.refreshToken || null;
 
-        // Store user info
+        this.setTokens(accessToken, refreshToken);
+
+        // Store user info with role (normalize)
+        const normalizedRole = (role || data.role || '').toString().toUpperCase();
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('role', normalizedRole);
         localStorage.setItem('userInfo', JSON.stringify({
             email,
-            role
+            role: normalizedRole
         }));
 
         return data;
@@ -139,7 +146,7 @@ class API {
 
     logout() {
         this.clearTokens();
-        window.location.href = '/sign-in';
+        window.location.href = 'login.html';
     }
 
     // ===================================
@@ -283,18 +290,28 @@ class API {
     // ===================================
 
     createWebSocket() {
-        if (!this.accessToken) {
+        // Prefer instance token, fallback to storage keys for compatibility
+        const token = this.accessToken || localStorage.getItem('accessToken') || localStorage.getItem('token');
+        if (!token) {
             console.error('No access token available');
             return null;
         }
 
-        const ws = new WebSocket(`${API_CONFIG.WS_SERVICE}/ws?token=${this.accessToken}`);
-        return ws;
+        return new WebSocket(`${API_CONFIG.WS_SERVICE}/ws?token=${token}`);
     }
 }
 
 // Export singleton instance
 const api = new API();
+
+// Backwards-compatible globals for older code that expects `api` or `auth`
+window.api = api;
+window.auth = {
+    signIn: api.signIn.bind(api),
+    signUp: api.signUp.bind(api),
+    logout: api.logout.bind(api),
+    createWebSocket: api.createWebSocket.bind(api)
+};
 
 // Log successful API initialization
 console.log('API module loaded successfully', {
@@ -302,32 +319,3 @@ console.log('API module loaded successfully', {
     hasRefreshToken: !!api.refreshToken,
     currentPath: window.location.pathname
 });
-
-// Check authentication on protected pages
-function requireAuth() {
-    const publicPages = ['/sign-in', '/sign-up'];
-    const currentPage = window.location.pathname;
-
-    // Skip auth check on public pages
-    if (publicPages.some(page => currentPage.includes(page))) {
-        return;
-    }
-
-    // Check if user has token
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-        console.warn('No access token found, redirecting to login');
-        window.location.href = '/sign-in';
-    }
-}
-
-// Initialize auth check on page load
-if (typeof window !== 'undefined') {
-    // Wait for DOM to be ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', requireAuth);
-    } else {
-        requireAuth();
-    }
-}
-

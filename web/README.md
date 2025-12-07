@@ -1,249 +1,338 @@
-# SDU Platform - Complete Web Application
+# SDU Platform - Frontend Documentation
 
-Modern, responsive educational platform built with pure HTML, CSS, and JavaScript (no frameworks).
+## 🚀 Полный фронтенд на Vanilla HTML/CSS/JavaScript
 
-## 🎨 Features
+Этот проект представляет собой современный веб-интерфейс для образовательной платформы SDU, построенный БЕЗ использования фреймворков.
 
-- **Modern UI/UX**: Glassmorphism design, smooth animations, gradient backgrounds
-- **Authentication**: JWT-based login/register system
-- **Dashboard**: Overview of assignments, attendance, and courses
-- **Assignments**: Create, view, and submit assignments with file upload
-- **Attendance**: Mark and track attendance for courses and sessions
-- **Real-time Chat**: WebSocket-based live messaging
-- **Responsive Design**: Works on mobile, tablet, and desktop
-- **No Dependencies**: Pure vanilla JavaScript - no frameworks needed
-
-## 📁 Project Structure
+## 📁 Структура проекта
 
 ```
 web/
-├── public/               # HTML pages
-│   ├── login.html       # Login page
-│   ├── register.html    # Registration page
-│   ├── index.html       # Dashboard
-│   ├── assignments.html # Assignments page
-│   ├── attendance.html  # Attendance tracking
-│   └── chat.html        # Real-time chat
-├── css/                 # Stylesheets
-│   ├── main.css         # Main styles
-│   └── animations.css   # Animations & page-specific styles
-└── js/                  # JavaScript
-    ├── api.js           # API service & backend integration
-    ├── auth.js          # Authentication logic
-    ├── dashboard.js     # Dashboard functionality
-    ├── assignments.js   # Assignments management
-    ├── attendance.js    # Attendance tracking
-    └── chat.js          # WebSocket chat client
+├── public/                      # HTML страницы
+│   ├── login.html              # Страница входа
+│   ├── teacher-dashboard.html  # Панель преподавателя
+│   ├── student-dashboard.html  # Панель студента
+│   ├── assignment-teacher.html # Задания (преподаватель)
+│   ├── assignment-student.html # Задания (студент)
+│   ├── attendance-teacher.html # Посещаемость (преподаватель)
+│   ├── attendance-student.html # Посещаемость (студент)
+│   └── chat.html               # Чат (WebSocket)
+├── css/
+│   ├── main.css                # Основные стили
+│   └── animations.css          # Анимации
+└── js/
+    ├── api.js                  # API интеграция
+    ├── auth.js                 # Аутентификация
+    ├── assignments.js          # Логика заданий
+    ├── attendance.js           # Логика посещаемости
+    └── chat.js                 # WebSocket чат
 ```
 
-## 🚀 Backend Services
+## 🔧 Бэкенд-сервисы
 
-### 1. Go Auth Service (Port 9090)
+Фронтенд интегрирован с тремя backend сервисами:
+
+### 1. Go Auth + WebSocket (порт 9090)
+- **POST** `/auth/sign-in` - Вход в систему
+- **POST** `/auth/sign-up` - Регистрация
+- **POST** `/auth/refresh` - Обновление токена
+- **WS** `/ws` - WebSocket для чата (порт 8085)
+
+### 2. Java Attendance Service (порт 4061)
+- **GET** `/attendance/getCourse/{courseId}` - Получить курс
+- **GET** `/attendance/session/{sessionId}?studentIds=...` - Получить сессию
+- **POST** `/attendance` - Отметить посещаемость
+
+### 3. Java File Upload Service (порт 4062)
+- **POST** `/uploadAssignment/create?teacherId={id}` - Создать задание
+- **GET** `/uploadAssignment/getAll` - Получить все задания
+- **POST** `/submit/assignment` - Отправить задание
+- **GET** `/submit/{submissionId}/file` - Скачать файл
+
+## 🎯 Функциональность
+
+### Для преподавателей (TEACHER):
+✅ Создание заданий
+✅ Просмотр отправленных работ студентов
+✅ Управление посещаемостью
+✅ Чат в реальном времени
+
+### Для студентов (STUDENT):
+✅ Просмотр заданий
+✅ Отправка файлов заданий
+✅ Просмотр своей посещаемости
+✅ Чат в реальном времени
+
+## 🔐 Аутентификация
+
+### Формат запроса на вход:
+```json
+POST http://localhost:9090/auth/sign-in
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "role": "TEACHER" или "STUDENT"
+}
 ```
-POST /auth/sign-up
-POST /auth/sign-in
+
+### Ответ сервера:
+```json
+{
+  "access_token": "...",
+  "refresh_token": "..."
+}
+```
+
+**Токены сохраняются в localStorage:**
+- `token` (или `accessToken`)
+- `refreshToken`
+- `role` - TEACHER или STUDENT
+
+## 🎨 Дизайн
+
+- ✨ Современный glassmorphism дизайн
+- 🌙 Темная цветовая схема
+- 📱 Полностью адаптивный (mobile + desktop)
+- 🎭 CSS анимации и переходы
+- 🎯 Интуитивный UX
+
+## 🚀 Запуск проекта
+
+### 1. Запустить backend сервисы
+
+```bash
+# Из корня проекта
+docker-compose up --build
+```
+
+Проверить доступность:
+```bash
+curl http://localhost:9090/health
+curl http://localhost:4061/actuator/health
+curl http://localhost:4062/actuator/health
+```
+
+### 2. Запустить frontend
+
+**Вариант A: Python HTTP Server (рекомендуется)**
+```bash
+# Из корня проекта
+python -m http.server 8000
+```
+
+**Вариант B: Использовать готовый скрипт**
+```bash
+# Windows
+start-frontend.bat
+```
+
+### 3. Открыть в браузере
+
+```
+http://localhost:8000/web/public/login.html
+```
+
+## 📝 Workflow для тестирования
+
+### 1. Создать тестового пользователя
+
+**Teacher:**
+```json
+POST http://localhost:9090/auth/sign-up
+{
+  "name": "John",
+  "surname": "Doe",
+  "email": "teacher@sdu.edu.kz",
+  "password": "123456",
+  "role": "TEACHER"
+}
+```
+
+**Student:**
+```json
+POST http://localhost:9090/auth/sign-up
+{
+  "name": "Jane",
+  "surname": "Smith",
+  "email": "student@sdu.edu.kz",
+  "password": "123456",
+  "role": "STUDENT"
+}
+```
+
+### 2. Войти в систему
+
+Открыть `/web/public/login.html` и использовать созданные учетные данные.
+
+### 3. Создать задание (как преподаватель)
+
+1. Войти как TEACHER
+2. Перейти в "Assignments"
+3. Нажать "Create Assignment"
+4. Заполнить форму:
+   - Teacher ID: ваш UUID
+   - Title: "Homework 1"
+   - Description: "Complete the database design"
+   - Due Date: выбрать дату
+5. Создать задание
+
+### 4. Отправить задание (как студент)
+
+1. Войти как STUDENT
+2. Перейти в "Assignments"
+3. Найти задание
+4. Нажать "Submit Assignment"
+5. Ввести Student ID
+6. Загрузить файл (.pdf, .doc, .docx)
+7. Отправить
+
+### 5. Отметить посещаемость (как преподаватель)
+
+1. Войти как TEACHER
+2. Перейти в "Attendance"
+3. Ввести Course ID
+4. Загрузить курс
+5. Ввести Session ID
+6. Отметить студентов как Present/Absent
+
+### 6. Использовать чат
+
+1. Перейти в "Chat"
+2. WebSocket автоматически подключится
+3. Отправлять сообщения
+4. Сообщения видны всем подключенным пользователям
+
+## 🔄 Автоматическое обновление токенов
+
+API wrapper автоматически обрабатывает истекшие access tokens:
+
+```javascript
+// При 401 ошибке автоматически вызывается:
 POST /auth/refresh
+Body: { refresh_token: "..." }
+
+// Получает новый access_token и повторяет запрос
 ```
 
-### 2. Java Attendance Service (Port 4061)
-```
-GET  /attendance/getCourse/{id}
-GET  /attendance/session/{sessionId}
-POST /attendance
-```
+## 💬 WebSocket протокол
 
-### 3. Java Assignment Service (Port 4062)
+### Подключение:
 ```
-GET  /uploadAssignment/getAll
-POST /uploadAssignment/create
-POST /submit/assignment
+ws://localhost:8085/ws?token=YOUR_ACCESS_TOKEN
 ```
 
-### 4. Go WebSocket Service (Port 8085)
+### Формат сообщения (отправка):
+```json
+{
+  "text": "Hello!",
+  "username": "user@example.com",
+  "time": "2025-01-06T12:00:00Z",
+  "isMyMessage": true
+}
 ```
-WS /ws?token={access_token}
+
+### Формат сообщения (получение):
+```json
+{
+  "text": "Hi there!",
+  "username": "other@example.com",
+  "time": "2025-01-06T12:01:00Z",
+  "isMyMessage": false
+}
 ```
 
-## 🛠️ Setup & Installation
+## 🎯 Важные особенности
 
-### Prerequisites
-- Go 1.20+
-- Java 17+
-- All backend services running on their respective ports
+### 1. Роль-based редирект
+После входа пользователь автоматически перенаправляется:
+- TEACHER → `/teacher-dashboard`
+- STUDENT → `/student-dashboard`
 
-### Start Backend Services
+### 2. Защита страниц
+Каждая страница проверяет роль пользователя:
+```javascript
+const role = localStorage.getItem('role');
+if (role !== 'TEACHER') {
+    window.location.href = '/student-dashboard';
+}
+```
 
-1. **Start Go Auth Service** (Port 9090)
+### 3. Реальные данные
+Фронтенд НЕ использует mock данные. Все данные загружаются с backend:
+- Задания → Java Service 4062
+- Посещаемость → Java Service 4061
+- Аутентификация → Go Service 9090
+
+### 4. Error handling
+- Network errors → retry + user notification
+- 401 → auto refresh token
+- 403 → redirect to appropriate page
+- 500 → show error message
+
+## 🛠️ Troubleshooting
+
+### Проблема: "Failed to fetch"
+**Решение:** Проверить, что backend сервисы запущены:
 ```bash
-cd cmd
-go run main.go
+docker-compose ps
+docker-compose logs app
+docker-compose logs file-service
+docker-compose logs attendance-service
 ```
 
-2. **Start Java Attendance Service** (Port 4061)
-```bash
-cd java/inf451/attendance_check-service
-mvn spring-boot:run
+### Проблема: "api is not defined"
+**Решение:** Убедиться, что:
+1. Frontend запущен через HTTP server (не file://)
+2. Путь к `/js/api.js` корректен
+3. Скрипт `api.js` загружается ДО других скриптов
+
+### Проблема: WebSocket не подключается
+**Решение:**
+1. Проверить, что Go backend запущен на порту 8085
+2. Проверить наличие access token в localStorage
+3. Проверить console на ошибки WebSocket
+
+### Проблема: CORS ошибки
+**Решение:** Убедиться, что backend настроен на прием запросов от frontend origin:
+```go
+// В Go backend должно быть:
+config := cors.DefaultConfig()
+config.AllowOrigins = []string{"http://localhost:8000"}
+router.Use(cors.New(config))
 ```
 
-3. **Start Java Assignment Service** (Port 4062)
-```bash
-cd java/inf451/file_upload-download
-mvn spring-boot:run
-```
+## 📊 Тестовые данные
 
-4. **Start Go WebSocket Server** (Port 8085)
-```bash
-# The WebSocket server should be started by your main application
-# It serves the web frontend and handles WebSocket connections
-```
+Для быстрого тестирования можно использовать:
 
-### Access the Application
+**Course ID:** `course-1`
+**Session ID:** `session-1`
+**Teacher ID:** `teacher-demo-id`
+**Student ID:** `student-demo-id`
 
-Open your browser and navigate to:
-```
-http://localhost:8085/
-```
+*(Замените на реальные UUID из вашей базы данных)*
 
-This will redirect you to the login page. From there you can:
-1. Register a new account (Student or Teacher)
-2. Login with your credentials
-3. Access the dashboard and all features
+## 🎓 Технологии
 
-## 🎯 Usage Guide
+- **HTML5** - семантическая разметка
+- **CSS3** - современный дизайн с переменными
+- **Vanilla JavaScript ES6+** - без фреймворков
+- **Fetch API** - HTTP запросы
+- **WebSocket API** - реальном времени чат
+- **LocalStorage** - хранение токенов
 
-### Authentication
+## 📄 Лицензия
 
-1. **Register**: Create an account with name, surname, email, password, and role (Student/Teacher)
-2. **Login**: Use your email and password to sign in
-3. **Auto Refresh**: Tokens are automatically refreshed when they expire
+Это учебный проект для SDU Platform.
 
-### Dashboard
+## 👥 Поддержка
 
-- View statistics: assignments count, attendance rate, messages, courses
-- Quick access to recent assignments
-- Quick action buttons for common tasks
+Если возникли вопросы - проверьте:
+1. Логи backend: `docker-compose logs -f`
+2. Browser console: F12 → Console
+3. Network tab: F12 → Network
 
-### Assignments
+---
 
-**For Students:**
-- View all assignments
-- Filter by status (All, Pending, Submitted, Late)
-- Submit assignments with file upload (PDF, DOC, DOCX)
-
-**For Teachers:**
-- Create new assignments
-- Set due dates
-- Assign to specific students
-
-### Attendance
-
-1. Select a course from the dropdown
-2. Select a session
-3. View attendance records
-4. Mark your attendance (Present, Late, Absent)
-
-### Chat
-
-- Real-time messaging with WebSocket
-- See who's online
-- Messages are delivered instantly
-- Auto-scroll to latest messages
-- Character counter (max 500 chars)
-
-## 🎨 Design Features
-
-### Glassmorphism
-- Frosted glass effect with backdrop-filter
-- Semi-transparent backgrounds
-- Soft shadows and borders
-
-### Animations
-- Fade in / slide in animations
-- Staggered list animations
-- Smooth transitions
-- Loading states
-- Pulse effects for status indicators
-
-### Responsive
-- Mobile-first approach
-- Flexible grid layouts
-- Touch-friendly buttons
-- Hamburger menu (if implemented)
-
-## 🔐 Security
-
-- JWT tokens stored in localStorage
-- Authorization header on all protected requests
-- Automatic token refresh
-- Secure WebSocket connections
-- XSS prevention with HTML escaping
-
-## 🐛 Troubleshooting
-
-### WebSocket Connection Fails
-- Ensure the WebSocket server is running on port 8085
-- Check that you're logged in and have a valid token
-- Check browser console for errors
-
-### API Calls Fail
-- Verify all backend services are running
-- Check CORS settings if accessing from different origin
-- Verify token is valid (check localStorage)
-
-### Styles Not Loading
-- Clear browser cache
-- Check file paths in HTML
-- Ensure web server is serving static files correctly
-
-## 📝 API Integration Examples
-
-### Login
-```javascript
-await api.signIn(email, password, role);
-```
-
-### Get Assignments
-```javascript
-const assignments = await api.getAllAssignments();
-```
-
-### Submit Assignment
-```javascript
-await api.submitAssignment(studentId, assignmentId, file);
-```
-
-### Mark Attendance
-```javascript
-await api.markAttendance(studentId, sessionId, 'PRESENT');
-```
-
-### WebSocket Chat
-```javascript
-const ws = api.createWebSocket();
-ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    displayMessage(message);
-};
-ws.send(JSON.stringify({ text: 'Hello!' }));
-```
-
-## 🌟 Future Enhancements
-
-- [ ] Profile page
-- [ ] Notifications system
-- [ ] File preview for assignments
-- [ ] Grade management
-- [ ] Calendar view
-- [ ] Dark mode toggle
-- [ ] Multi-language support
-- [ ] Email notifications
-- [ ] Mobile app version
-
-## 📄 License
-
-This project is part of SDU Platform educational system.
-
-## 👥 Contributors
-
-Built with ❤️ for SDU Platform
+**Успешной работы! 🚀**
 

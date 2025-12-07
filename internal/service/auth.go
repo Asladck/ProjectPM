@@ -64,8 +64,8 @@ func (s *AuthService) Create(user models.SignUpRequest) (string, error) {
 	})
 }
 
-func (s *AuthService) GenerateToken(password, email string) (string, string, error) {
-	user, err := s.rep.GetUser(generatePasswordHash(password), email)
+func (s *AuthService) GenerateToken(password, email, role string) (string, string, error) {
+	user, err := s.rep.GetUser(generatePasswordHash(password), email, role)
 	if err != nil {
 		return "", "", err
 	}

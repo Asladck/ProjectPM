@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments (Teacher) - SDU Platform</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="teacher-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="assignment-teacher.html" class="nav-link active">Assignments</a>
+                <a href="attendance-teacher.html" class="nav-link">Attendance</a>
+                <a href="chat.html" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Teacher</span>
+                    <span class="user-role badge badge-teacher">TEACHER</span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">📚 Assignments</h1>
+                    <p class="page-subtitle">Create and manage assignments</p>
+                </div>
+                <button class="btn btn-primary" id="createAssignmentBtn">
+                    + Create Assignment
+                </button>
+            </div>
+
+            <div id="assignmentsList" class="assignments-container">
+                <div class="loading">Loading assignments...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Assignment Modal -->
+    <div id="createAssignmentModal" class="modal hidden">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Assignment</h2>
+                <button class="modal-close" id="closeCreateModal">&times;</button>
+            </div>
+            <form id="createAssignmentForm" class="modal-body">
+                <div class="form-group">
+                    <label for="teacherId">Teacher ID</label>
+                    <input type="text" id="teacherId" required placeholder="Your teacher UUID">
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentTitle">Title</label>
+                    <input type="text" id="assignmentTitle" required placeholder="e.g., Database Design Project">
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentDescription">Description</label>
+                    <textarea id="assignmentDescription" rows="4" required placeholder="Assignment details..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="assignmentDueDate">Due Date</label>
+                    <input type="datetime-local" id="assignmentDueDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="studentIds">Student IDs (comma-separated, optional)</label>
+                    <textarea id="studentIds" rows="3" placeholder="uuid1, uuid2, uuid3..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelCreate">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Assignment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+        // Check if user is teacher
+        const role = localStorage.getItem('role');
+        if (role !== 'TEACHER') {
+            window.location.href = 'assignment-student.html';
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            api.logout();
+        });
+
+        // Modal handling
+        const createModal = document.getElementById('createAssignmentModal');
+        const createBtn = document.getElementById('createAssignmentBtn');
+        const closeBtn = document.getElementById('closeCreateModal');
+        const cancelBtn = document.getElementById('cancelCreate');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const form = document.getElementById('createAssignmentForm');
+
+        createBtn?.addEventListener('click', () => {
+            createModal.classList.remove('hidden');
+        });
+
+        [closeBtn, cancelBtn, modalOverlay].forEach(el => {
+            el?.addEventListener('click', () => {
+                createModal.classList.add('hidden');
+                form.reset();
+            });
+        });
+
+        // Create assignment
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const teacherId = document.getElementById('teacherId').value;
+            const title = document.getElementById('assignmentTitle').value;
+            const description = document.getElementById('assignmentDescription').value;
+            const dueDate = document.getElementById('assignmentDueDate').value;
+            const studentIdsText = document.getElementById('studentIds').value;
+
+            // Parse student IDs
+            const studentIds = studentIdsText
+                .split(',')
+                .map(id => id.trim())
+                .filter(id => id.length > 0);
+
+            try {
+                await api.createAssignment(
+                    teacherId,
+                    title,
+                    description,
+                    new Date(dueDate).toISOString(),
+                    studentIds
+                );
+
+                alert('Assignment created successfully!');
+                createModal.classList.add('hidden');
+                form.reset();
+                loadAssignments();
+            } catch (error) {
+                alert('Failed to create assignment: ' + error.message);
+            }
+        });
+
+        // Load assignments
+        async function loadAssignments() {
+            const container = document.getElementById('assignmentsList');
+
+            try {
+                const assignments = await api.getAllAssignments();
+
+                if (!assignments || assignments.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No assignments yet. Create your first one!</div>';
+                    return;
+                }
+
+                container.innerHTML = assignments.map(assignment => `
+                    <div class="assignment-card">
+                        <div class="assignment-header">
+                            <h3>${escapeHtml(assignment.title || 'Untitled')}</h3>
+                            <span class="assignment-badge">Teacher View</span>
+                        </div>
+                        <p class="assignment-description">${escapeHtml(assignment.description || '')}</p>
+                        <div class="assignment-footer">
+                            <span class="assignment-due">📅 Due: ${new Date(assignment.dueDate || Date.now()).toLocaleString()}</span>
+                            <span class="assignment-students">👥 ${assignment.studentIds?.length || 0} students</span>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                container.innerHTML = `<div class="error-state">Failed to load assignments: ${error.message}</div>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        loadAssignments();
+    </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance (Student) - SDU Platform</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="student-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="assignment-student.html" class="nav-link">Assignments</a>
+                <a href="attendance-student.html" class="nav-link active">Attendance</a>
+                <a href="chat.html" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Student</span>
+                    <span class="user-role badge badge-student">STUDENT</span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">✅ My Attendance</h1>
+                    <p class="page-subtitle">Track your attendance records</p>
+                </div>
+            </div>
+
+            <!-- Student ID Input -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Load Your Attendance</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="studentId">Your Student ID</label>
+                        <input type="text" id="studentId" placeholder="Enter your UUID">
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionId">Session ID</label>
+                        <input type="text" id="sessionId" placeholder="Enter session UUID">
+                    </div>
+                    <button class="btn btn-primary" id="loadAttendanceBtn">Load Attendance</button>
+                </div>
+            </div>
+
+            <!-- Attendance Records -->
+            <div id="attendanceRecords" class="card hidden">
+                <div class="card-header">
+                    <h3>Your Attendance Records</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Session</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr>
+                                    <td colspan="3" class="text-center">No records found</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="attendance-stats mt-4">
+                        <div class="stat-card">
+                            <div class="stat-value" id="presentCount">0</div>
+                            <div class="stat-label">Present</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="absentCount">0</div>
+                            <div class="stat-label">Absent</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="attendancePercentage">0%</div>
+                            <div class="stat-label">Attendance Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+        // Check if user is student
+        const role = localStorage.getItem('role');
+        if (role !== 'STUDENT') {
+            window.location.href = 'attendance-teacher.html';
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            api.logout();
+        });
+
+        // Load attendance
+        document.getElementById('loadAttendanceBtn')?.addEventListener('click', async () => {
+            const studentId = document.getElementById('studentId').value;
+            const sessionId = document.getElementById('sessionId').value;
+
+            if (!studentId || !sessionId) {
+                alert('Please enter both Student ID and Session ID');
+                return;
+            }
+
+            try {
+                const data = await api.getSession(sessionId, [studentId]);
+                renderAttendanceRecords(data.students || []);
+                document.getElementById('attendanceRecords').classList.remove('hidden');
+            } catch (error) {
+                alert('Failed to load attendance: ' + error.message);
+            }
+        });
+
+        function renderAttendanceRecords(records) {
+            const tbody = document.getElementById('attendanceTableBody');
+
+            if (!records || records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center">No records found</td></tr>';
+                updateStats(0, 0);
+                return;
+            }
+
+            tbody.innerHTML = records.map(record => `
+                <tr>
+                    <td>${new Date(record.date || Date.now()).toLocaleDateString()}</td>
+                    <td>${escapeHtml(record.sessionName || 'Session')}</td>
+                    <td>
+                        <span class="badge ${record.status === 'PRESENT' ? 'badge-success' : 'badge-danger'}">
+                            ${record.status || 'ABSENT'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Calculate statistics
+            const presentCount = records.filter(r => r.status === 'PRESENT').length;
+            const absentCount = records.length - presentCount;
+            updateStats(presentCount, absentCount);
+        }
+
+        function updateStats(presentCount, absentCount) {
+            document.getElementById('presentCount').textContent = presentCount;
+            document.getElementById('absentCount').textContent = absentCount;
+
+            const total = presentCount + absentCount;
+            const percentage = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+            document.getElementById('attendancePercentage').textContent = percentage + '%';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance (Teacher) - SDU Platform</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="teacher-dashboard.html" class="nav-link">Dashboard</a>
+                <a href="assignment-teacher.html" class="nav-link">Assignments</a>
+                <a href="attendance-teacher.html" class="nav-link active">Attendance</a>
+                <a href="chat.html" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Teacher</span>
+                    <span class="user-role badge badge-teacher">TEACHER</span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">✅ Attendance Management</h1>
+                    <p class="page-subtitle">Track student presence</p>
+                </div>
+            </div>
+
+            <!-- Course Selection -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Select Course</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="courseId">Course ID</label>
+                        <input type="text" id="courseId" placeholder="Enter course UUID">
+                        <button class="btn btn-primary mt-2" id="loadCourseBtn">Load Course</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Info -->
+            <div id="courseInfo" class="card mb-4 hidden">
+                <div class="card-header">
+                    <h3 id="courseName">Course Name</h3>
+                </div>
+                <div class="card-body">
+                    <p id="courseDescription"></p>
+                    <button class="btn btn-primary" id="loadSessionBtn">Load Session</button>
+                </div>
+            </div>
+
+            <!-- Attendance Table -->
+            <div id="attendanceSection" class="card hidden">
+                <div class="card-header">
+                    <h3>Mark Attendance</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label for="sessionId">Session ID</label>
+                        <input type="text" id="sessionId" placeholder="Enter session UUID">
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Student ID</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr>
+                                    <td colspan="4" class="text-center">No data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script>
+        // Check if user is teacher
+        const role = localStorage.getItem('role');
+        if (role !== 'TEACHER') {
+            window.location.href = 'attendance-student.html';
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            api.logout();
+        });
+
+        // Load course
+        document.getElementById('loadCourseBtn')?.addEventListener('click', async () => {
+            const courseId = document.getElementById('courseId').value;
+            if (!courseId) {
+                alert('Please enter a course ID');
+                return;
+            }
+
+            try {
+                const course = await api.getCourse(courseId);
+                document.getElementById('courseName').textContent = course.name || 'Course';
+                document.getElementById('courseDescription').textContent = course.description || '';
+                document.getElementById('courseInfo').classList.remove('hidden');
+                document.getElementById('attendanceSection').classList.remove('hidden');
+            } catch (error) {
+                alert('Failed to load course: ' + error.message);
+            }
+        });
+
+        // Load session
+        document.getElementById('loadSessionBtn')?.addEventListener('click', async () => {
+            const sessionId = document.getElementById('sessionId').value;
+            if (!sessionId) {
+                alert('Please enter a session ID');
+                return;
+            }
+
+            try {
+                const session = await api.getSession(sessionId);
+                renderAttendanceTable(session.students || [], sessionId);
+            } catch (error) {
+                alert('Failed to load session: ' + error.message);
+            }
+        });
+
+        function renderAttendanceTable(students, sessionId) {
+            const tbody = document.getElementById('attendanceTableBody');
+
+            if (!students || students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No students found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = students.map(student => `
+                <tr>
+                    <td>${escapeHtml(student.name || 'Unknown')}</td>
+                    <td>${escapeHtml(student.id || '-')}</td>
+                    <td>
+                        <span class="badge ${student.status === 'PRESENT' ? 'badge-success' : 'badge-danger'}">
+                            ${student.status || 'ABSENT'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="markAttendance('${student.id}', '${sessionId}', 'PRESENT')">
+                            Present
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="markAttendance('${student.id}', '${sessionId}', 'ABSENT')">
+                            Absent
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function markAttendance(studentId, sessionId, status) {
+            try {
+                await api.markAttendance(studentId, sessionId, status);
+                alert(`Marked ${status}`);
+                // Reload session
+                const session = await api.getSession(sessionId);
+                renderAttendanceTable(session.students || [], sessionId);
+            } catch (error) {
+                alert('Failed to mark attendance: ' + error.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Make function globally available
+        window.markAttendance = markAttendance;
+    </script>
+</body>
+</html>

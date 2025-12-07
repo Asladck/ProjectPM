@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - SDU Platform</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/animations.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <svg width="40" height="40" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="25" cy="25" r="25" fill="url(#gradient)"/>
+                    <path d="M15 20L25 15L35 20V30L25 35L15 30V20Z" fill="white"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="50" y2="50">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="100%" stop-color="#764ba2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SDU Platform</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="student-dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="assignment-student.html" class="nav-link">Assignments</a>
+                <a href="attendance-student.html" class="nav-link">Attendance</a>
+                <a href="chat.html" class="nav-link">Chat</a>
+            </div>
+
+            <div class="nav-user">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Student</span>
+                    <span class="user-role badge badge-student">STUDENT</span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">👨‍🎓 Student Dashboard</h1>
+                    <p class="page-subtitle">Welcome back! Track your progress</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Quick Actions -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3>📝 Quick Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <a href="assignment-student.html" class="action-btn">
+                            <span class="action-icon">📚</span>
+                            <div>
+                                <h4>View Assignments</h4>
+                                <p>See and submit your assignments</p>
+                            </div>
+                        </a>
+                        <a href="attendance-student.html" class="action-btn">
+                            <span class="action-icon">✅</span>
+                            <div>
+                                <h4>My Attendance</h4>
+                                <p>Check your attendance records</p>
+                            </div>
+                        </a>
+                        <a href="chat.html" class="action-btn">
+                            <span class="action-icon">💬</span>
+                            <div>
+                                <h4>Class Chat</h4>
+                                <p>Communicate with classmates</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3>📊 My Progress</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalAssignments">-</div>
+                                <div class="stat-label">Total Assignments</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="submittedCount">-</div>
+                                <div class="stat-label">Submitted</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="attendanceRate">-</div>
+                                <div class="stat-label">Attendance Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script>
+        // Check if user is student
+        const role = localStorage.getItem('role');
+        if (role !== 'STUDENT') {
+            window.location.href = 'teacher-dashboard.html';
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            api.logout();
+        });
+
+        // Load dashboard stats
+        async function loadStats() {
+            try {
+                const assignments = await api.getAllAssignments();
+                document.getElementById('totalAssignments').textContent = assignments.length || 0;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

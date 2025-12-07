@@ -43,7 +43,7 @@ func (h *Handler) signIn(c *gin.Context) {
 			StatusBadRequest, err.Error())
 		return
 	}
-	tokenA, tokenR, err := h.service.Auth.GenerateToken(input.Password, input.Email)
+	tokenA, tokenR, err := h.service.Auth.GenerateToken(input.Password, input.Email, input.Role)
 	if err != nil {
 		NewErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

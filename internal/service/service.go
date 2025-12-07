@@ -10,7 +10,7 @@ type Service struct {
 }
 type Auth interface {
 	Create(user models.SignUpRequest) (string, error)
-	GenerateToken(password, email string) (string, string, error)
+	GenerateToken(password, email, role string) (string, string, error)
 	ParseRefToken(tokenR string) (string, error)
 	ParseToken(token string) (string, error)
 	GenerateAccToken(userId string) (string, error)
